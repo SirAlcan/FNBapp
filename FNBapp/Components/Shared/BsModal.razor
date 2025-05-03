@@ -1,0 +1,69 @@
+﻿@inject IJSRuntime JSRuntime
+
+<!-- Modal -->
+<div class="modal fade" id="bsConfirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="confirmationModalLabel">@Title</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @ChildContent
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        @onclick="() => ConfirmationClicked(false)">
+                    @CancelText
+                </button>
+                <button type="button" class="btn btn-danger"
+                        @onclick="() => ConfirmationClicked(true)">
+                    @ConfirmText
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "Confirmation";
+
+    [Parameter]
+    public string ConfirmText { get; set; } = "Delete";
+
+    [Parameter]
+    public string CancelText { get; set; } = "Cancel";
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnModalConfirmation { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Register the JavaScript functions for the modal
+            await JSRuntime.InvokeVoidAsync("eval", @"
+                window.ShowConfirmationModal = function() {
+                    var modal = new bootstrap.Modal(document.getElementById('bsConfirmationModal'));
+                    modal.show();
+                };
+
+                window.HideConfirmationModal = function() {
+                    var modal = bootstrap.Modal.getInstance(document.getElementById('bsConfirmationModal'));
+                    if(modal) {
+                        modal.hide();
+                    }
+                };
+            ");
+        }
+    }
+
+    private async Task ConfirmationClicked(bool value)
+    {
+        await OnModalConfirmation.InvokeAsync(value);
+    }
+}
