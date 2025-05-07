@@ -6,10 +6,12 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using FNBapp.Data
+@using FNBapp.Utility
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
+@inject RoleManager<IdentityRole> RoleManager
 @inject IEmailSender<ApplicationUser> EmailSender
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
@@ -17,42 +19,101 @@
 
 <PageTitle>Register</PageTitle>
 
-<h1>Register</h1>
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0 rounded-lg">
+                <div class="card-header bg-primary text-white text-center">
+                    <h1 class="display-5 fw-bold my-2">Register</h1>
+                </div>
+                <div class="card-body">
+                    <StatusMessage Message="@Message" />
+                    <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+                        <DataAnnotationsValidator />
+                        <div class="text-center mb-3">
+                            <h4>Create a new account</h4>
+                        </div>
+                        <hr class="my-4" />
+                        <ValidationSummary class="text-danger" role="alert" />
 
-<div class="row">
-    <div class="col-lg-6">
-        <StatusMessage Message="@Message" />
-        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
-            <DataAnnotationsValidator />
-            <h2>Create a new account.</h2>
-            <hr />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label for="Input.Email">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
+                        <div class="form-floating mb-3">
+                            <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
+                            <label for="Input.Email">Email</label>
+                            <ValidationMessage For="() => Input.Email" class="text-danger" />
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                            <label for="Input.Password">Password</label>
+                            <ValidationMessage For="() => Input.Password" class="text-danger" />
+                        </div>
+
+                        <div class="form-floating mb-4">
+                            <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
+                            <label for="Input.ConfirmPassword">Confirm Password</label>
+                            <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
+                        </div>
+
+                        <div class="form-floating mb-4">
+                            <InputSelect @bind-Value="Input.Role" class="form-select">
+                                <option value="@SD.Role_Admin" >@SD.Role_Admin</option>
+                                <option value="@SD.Role_Customer" selected >@SD.Role_Customer</option>
+                                <option value="@SD.Role_Employee"  >@SD.Role_Employee</option>
+                                <option value="@SD.Role_StoreManager" >@SD.Role_StoreManager</option>
+                                <option value="@SD.Role_Waiter">@SD.Role_Waiter</option>
+                            </InputSelect>
+                            <label for="Role">Select Role</label>
+                            <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Register</button>
+                        </div>
+
+                        <hr class="my-4" />
+
+                        <div class="text-center">
+                            <h5>Use another service to register</h5>
+                            <div class="mt-3">
+                                <ExternalLoginPicker />
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+                <div class="card-footer text-center py-3">
+                    <div class="small">
+                        <a href="login">Have an account? Go to login</a>
+                    </div>
+                </div>
             </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="Input.Password">Password</label>
-                <ValidationMessage For="() => Input.Password" class="text-danger" />
-            </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="Input.ConfirmPassword">Confirm Password</label>
-                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </EditForm>
-    </div>
-    <div class="col-lg-4 col-lg-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
+        </div>
     </div>
 </div>
+
+<style>
+    /* Custom styles to enhance the form appearance */
+    .card {
+    transition: all 0.3s;
+    }
+
+    .card:hover {
+    transform: translateY(-5px);
+    }
+
+    .btn-primary {
+    transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-floating input:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+</style>
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
@@ -81,6 +142,24 @@
         }
 
         Logger.LogInformation("User created a new account with password.");
+
+
+        if (!await RoleManager.RoleExistsAsync(SD.Role_Customer))
+        {
+            await RoleManager.CreateAsync(new IdentityRole(SD.Role_Admin));
+            await RoleManager.CreateAsync(new IdentityRole(SD.Role_Customer));
+            await RoleManager.CreateAsync(new IdentityRole(SD.Role_Employee));
+            await RoleManager.CreateAsync(new IdentityRole(SD.Role_StoreManager));
+            await RoleManager.CreateAsync(new IdentityRole(SD.Role_Waiter));
+        }
+        if (Input.Role is not null)
+        {
+            await UserManager.AddToRoleAsync(user, Input.Role);
+        }
+        else
+        {
+            await UserManager.AddToRoleAsync(user, SD.Role_Customer);
+        }
 
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
@@ -141,5 +220,7 @@
         [Display(Name = "Confirm password")]
         [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
         public string ConfirmPassword { get; set; } = "";
+
+        public string? Role { get; set; }
     }
 }
