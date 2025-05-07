@@ -1,6 +1,6 @@
 ﻿@page "/category/create/"
 @page "/category/update/{id:int}"
-@inject ICategoryRepository _CategoryRepository
+@inject ICategoryRepository _categoryRepository
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _JS
 
@@ -16,7 +16,7 @@ else
     <div class="container py-5">
         <div class="row mb-4">
             <div class="col-12 d-flex justify-content-between align-items-center">
-                <h2 class="fw-bold text-primary mb-0">@(Id > 0 ? "Update" : "Create") Category</h2>
+                <h2 class="fw-bold text-primary mb-0">@(Id==0? "Create" : "Update") Category</h2>
                 <a href="/category" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-2"></i>Back to List
                 </a>
@@ -44,7 +44,7 @@ else
                     <div class="d-flex justify-content-end mt-4">
                         <button type="submit" class="btn btn-success" disabled="@IsProcessing">
                             <i class="bi bi-@(Id > 0 ? "save" : "plus-circle")"></i>
-                            @(Id > 0 ? "Update" : "Create")
+                            @(Id==0? "Create" : "Update")
                         </button>
                     </div>
                 </EditForm>
@@ -74,7 +74,7 @@ else
     {
         if (Id > 0)
         {
-            Category = await _CategoryRepository.GetAsync(Id);
+            Category = await _categoryRepository.GetAsync(Id);
         }
     }
 
@@ -85,12 +85,12 @@ else
         {
             if (Category.Id == 0)
             {
-                await _CategoryRepository.CreateAsync(Category);
+                await _categoryRepository.CreateAsync(Category);
                 await _JS.ToastrSuccess("Category Created Successfully");
             }
             else
             {
-                await _CategoryRepository.UpdateAsync(Category);
+                await _categoryRepository.UpdateAsync(Category);
                 await _JS.ToastrSuccess("Category Updated Successfully");
             }
             _navigationManager.NavigateTo("category");

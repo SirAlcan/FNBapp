@@ -1,8 +1,9 @@
 ﻿@page "/product/create/"
 @page "/product/update/{id:int}"
-@inject IProductRepository _ProductRepository
-@inject ICategoryRepository _CategoryRepository
+@inject IProductRepository _productRepository
+@inject ICategoryRepository _categoryRepository
 @inject NavigationManager _navigationManager
+@inject IWebHostEnvironment _webHostEnvironment
 @inject IJSRuntime _JS
 
 @if (IsProcessing)
@@ -17,7 +18,7 @@ else
     <div class="container py-5">
         <div class="row mb-4">
             <div class="col-12 d-flex justify-content-between align-items-center">
-                <h2 class="fw-bold text-primary mb-0">@(Id > 0 ? "Update" : "Create") Product</h2>
+                <h2 class="fw-bold text-primary mb-0">@(Id==0?"Create" : "Update") Product</h2>
                 <a href="/product" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-2"></i>Back to List
                 </a>
@@ -32,20 +33,99 @@ else
                 <EditForm Model="@Product" FormName="ProductUpsertForm" OnValidSubmit="UpsertProduct">
                     <DataAnnotationsValidator />
 
-                    <div class="mb-4">
-                        <div class="form-floating">
-                            <InputText @bind-Value="Product.Name" class="form-control" id="Name" placeholder="Name" />
-                            <label for="Name">Product Name</label>
-                        </div>
-                        <div class="text-danger mt-1">
-                            <ValidationMessage For="() => Product.Name" />
-                        </div>
+
+                    <div class="form-floating">
+                        <InputText @bind-Value="Product.Name" class="form-control" id="Name" placeholder="Name" />
+                        <label for="Name">Product Name</label>
+                    </div>
+                    <div class="text-danger mt-1">
+                        <ValidationMessage For="@(() => Product.Name)" />
+                    </div>
+
+
+
+
+                    <div class="form-floating">
+                        <InputText @bind-Value="Product.Description" class="form-control" id="Description" placeholder="Description" />
+                        <label for="Description">Product Description</label>
+                    </div>
+                    <div class="text-danger mt-1">
+                        <ValidationMessage For="@(() => Product.Description)" />
+                    </div>
+
+                    <div class="form-floating">
+                        <InputText @bind-Value="Product.SpecialTag" class="form-control" id="SpecialTag" placeholder="SpecialTag" />
+                        <label for="SpecialTag">Special Tag</label>
+                    </div>
+                    <div class="text-danger mt-1">
+                        <ValidationMessage For="@(() => Product.SpecialTag)" />
+                    </div>
+
+                    <div class="form-floating">
+                        <InputNumber @bind-Value="Product.Price" class="form-control" id="Price" placeholder="Price" />
+                        <label for="Price">Product Price</label>
+                    </div>
+                    <div class="text-danger mt-1">
+                        <ValidationMessage For="@(() => Product.Price)" />
+                    </div>
+
+
+                    <div class="form-floating">
+                        <InputSelect @bind-Value="Product.CategoryId" class="form-Select" id="Category">
+                            <option value="0" disabled selected>--Select Category--</option>
+                            @foreach (var category in _categories)
+                            {
+                                <option value="@category.Id">@category.Name</option>
+                            }
+                        </InputSelect>
+                        <label for="category">Category</label>
+                    </div>
+                    <div class="text-danger mt-1">
+                        <ValidationMessage For="@(() => Product.CategoryId)" />
+                    </div>
+                  @*   <div class="form-floating">
+                      @if(Product.ImageUrl == null)
+                        {  
+                            <InputFile OnChange="LoadFiles" class="form-control" id="customFile"
+                            accept="image/x-png,image/jpeg"> </InputFile>
+                            <label for="customFile">Upload Image</label>
+                       } 
+                       @if(Product.ImageUrl != null) 
+                       {  
+                            <div class="row">
+                                <div class="col-3 p-2">
+                                    <img src="@Product.ImageUrl" alt="..." class="img-thumbnail">
+                                </div>
+                                <div class="col-md-9">
+                                    <i class="bi bi-trash btn btn-outline-danger" @onclick="DeleteImage">Remove</i>
+                                </div>
+                            </div>
+                         } 
+                    </div> *@
+                    <div class="form-floating">
+                        @if (Product != null && string.IsNullOrWhiteSpace(Product.ImageUrl))
+                        {
+                            <InputFile OnChange="LoadFiles" class="form-control" id="customFile"
+                                       accept="image/x-png,image/jpeg" />
+                            <label for="customFile">Upload Image</label>
+                        }
+                        else if (Product != null && !string.IsNullOrWhiteSpace(Product.ImageUrl))
+                        {
+                            <div class="row">
+                                <div class="col-3 p-2">
+                                    <img src="@Product.ImageUrl" alt="..." class="img-thumbnail">
+                                </div>
+                                <div class="col-md-9">
+                                    <i class="bi bi-trash btn btn-outline-danger" @onclick="DeleteImage">Remove</i>
+                                </div>
+                            </div>
+                        }
                     </div>
 
                     <div class="d-flex justify-content-end mt-4">
                         <button type="submit" class="btn btn-success" disabled="@IsProcessing">
                             <i class="bi bi-@(Id > 0 ? "save" : "plus-circle")"></i>
-                            @(Id > 0 ? "Update" : "Create")
+                            @(Id==0? "Create" : "Update")
                         </button>
                     </div>
                 </EditForm>
@@ -61,8 +141,15 @@ else
     private Product Product { get; set; } = new Product();
     private IEnumerable<Category> _categories = new List<Category>();
 
-
+    private string? _directoryPath { get; set; }
+    private bool _isImageLoading = false;
     private bool IsProcessing { get; set; } = true;
+
+    protected override Task OnInitializedAsync()
+    {
+        _directoryPath = Path.Combine(_webHostEnvironment.WebRootPath, "images", "product");
+        return base.OnInitializedAsync();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -78,33 +165,64 @@ else
     {
         if (Id > 0)
         {
-            Product = await _ProductRepository.GetAsync(Id);
+            Product = await _productRepository.GetAsync(Id);
         }
-        _categories = await _CategoryRepository.GetAllAsync();
+        _categories = await _categoryRepository.GetAllAsync();
 
     }
 
     private async Task UpsertProduct()
     {
         IsProcessing = true;
-        try
+
+
+        if (Product.Id == 0)
         {
-            if (Product.Id == 0)
-            {
-                await _ProductRepository.CreateAsync(Product);
-                await _JS.ToastrSuccess("Product Created Successfully");
-            }
-            else
-            {
-                await _ProductRepository.UpdateAsync(Product);
-                await _JS.ToastrSuccess("Product Updated Successfully");
-            }
-            _navigationManager.NavigateTo("product");
+            await _productRepository.CreateAsync(Product);
+            await _JS.ToastrSuccess("Product Created Successfully");
         }
-        catch (Exception ex)
+        else
         {
-            await _JS.ToastrError("An error occurred: " + ex.Message);
-            IsProcessing = false;
+            await _productRepository.UpdateAsync(Product);
+            await _JS.ToastrSuccess("Product Updated Successfully");
         }
+        IsProcessing = false;
+        _navigationManager.NavigateTo("product");
+
+    }
+
+    private async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        IsProcessing = true;
+        var file = e.File;
+        FileInfo fileInfo = new(file.Name);
+        var newFileName = $"{Guid.NewGuid()}{fileInfo.Extension}";
+        if(!Directory.Exists(_directoryPath))
+        {
+            Directory.CreateDirectory(_directoryPath);
+        }
+        var path = Path.Combine(_directoryPath, newFileName);
+
+        await using FileStream fileStream = new(path, FileMode.Create);
+        await file.OpenReadStream(file.Size).CopyToAsync(fileStream);
+        Product.ImageUrl = $"/images/product/{newFileName}";
+        IsProcessing = false;
+    }   
+    void DeleteImage()
+    {
+        @if (string.IsNullOrWhiteSpace(Product.ImageUrl))
+            return;
+        var fileToDelete = Product.ImageUrl.Split('/').Reverse().First();
+        // var fileName = Path.GetFileName(Product.ImageUrl);
+        var filePathToDeleteImage = Path.Combine(_directoryPath, fileToDelete);
+
+        if (!File.Exists(filePathToDeleteImage))
+            return;
+        File.Delete(filePathToDeleteImage);
+        
+
+        Product.ImageUrl = null;
+        StateHasChanged();
+        return;
     }
 }
