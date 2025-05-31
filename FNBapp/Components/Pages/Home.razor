@@ -1,8 +1,8 @@
 ﻿@page "/"
 @using System.Globalization
-@inject AuthenticationStateProvider _AuthenticationStateProvider
+@inject AuthenticationStateProvider _authenticationStateProvider
 @inject IJSRuntime _JS
-@inject NavigationManager _NavigationManager
+@inject NavigationManager _navigationManager
 @inject IProductRepository _productRepository  
 @inject ICategoryRepository _categoryRepository
 @inject IShoppingCartRepository _cartRepository
@@ -154,13 +154,13 @@ else
 
     private async Task AddOrderItem(Product product)
     {
-        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         var authenticated = user.Identity is not null && user.Identity.IsAuthenticated;
 
         if (!authenticated)
         {
-            _NavigationManager.NavigateTo("/Account/Login", forceLoad: true); 
+            _navigationManager.NavigateTo("/Account/Login", forceLoad: true); 
         }
         else
         {

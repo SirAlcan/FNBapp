@@ -1,0 +1,34 @@
+﻿@page "/order/confirmation/{orderId}"
+
+@if (IsProcessing)
+{
+    <div class="position-absolute w-100 vh-100 d-flex flex-column align-items-center bg-white justify-content-center">
+        <p>Loading...<BitEllipsisLoading /></p>
+    </div>
+}
+else
+{
+   <div class="text-center">
+       <h1 class="pt-4 text-success"> You are one shop closer to your order </h1>
+       <p> Your Order is confirmed! Please note your ID for any questions.</p>
+       <p>Order ID: <b>@orderId</b> </p>
+       <hr/>
+       <img src="/images/your-logo.svg" width="40%"/>
+       <hr/>
+
+   </div> 
+}
+@code {
+    [Parameter]
+    public string orderId { get; set; }
+
+    private bool IsProcessing { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Simulate a delay to mimic processing time
+        // await Task.Delay(2000);
+        IsProcessing = false;
+    }
+
+}

@@ -1,10 +1,15 @@
 ﻿@page "/cart"
+@rendermode InteractiveServer
 @using System.Globalization
 @using Microsoft.AspNetCore.Authorization
-@inject AuthenticationStateProvider _AuthenticationStateProvider
+@using FNBapp.Utility
+
+@inject AuthenticationStateProvider _authenticationStateProvider
 @* @inject IJSRuntime _JS *@
-@* @inject NavigationManager _NavigationManager *@
+@* @inject NavigationManager _navigationManager *@
 @inject IShoppingCartRepository _cartRepository
+@inject IOrderRepository _orderRepository
+@inject NavigationManager _navigationManager
 @attribute [Authorize]
 
 @* 
@@ -17,249 +22,243 @@
 }
 else
 {
-    <div class="container-fluid bg-light min-vh-100 py-4">
-        <div class="container">
-            <div class="row justify-content-center">
-                <div class="col-12">
-                    <!-- Page Header -->
-                    <div class="text-center mb-4">
-                        <h1 class="display-6 fw-bold text-dark mb-2">Checkout</h1>
-                        <p class="text-muted">Review your order and complete your purchase</p>
-                    </div>
-
-                    <div class="row g-4">
-                        <!-- Order Summary Column -->
-                        <div class="col-lg-7">
-                            <div class="card shadow-sm border-0 h-100">
-                                <div class="card-header bg-white border-0 py-3">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h4 class="mb-0 text-success fw-bold">
-                                            <i class="fas fa-shopping-bag me-2"></i>Order Summary
-                                        </h4>
-                                        <a href="#" class="btn btn-outline-secondary btn-sm">
-                                            <i class="fas fa-arrow-left me-1"></i>Back to Cart
-                                        </a>
-                                    </div>
-                                </div>
 
 
-                                <div class="card-body p-0">
-                                    <!-- Product Item -->
+    @if (ShoppingCarts.Any())
+    {
 
-                                    <div class="border-bottom p-4">
-                                        @*   @foreach (var cartItem in ShoppingCarts)
-                                            {
-                                            <div class="row align-items-center">
-                                                <div class="col-md-3 col-sm-4 mb-3 mb-md-0">
-                                                    <div class="position-relative">
-                                                        <img src="" alt="Product" class="img-fluid rounded-3 shadow-sm" style="aspect-ratio: 1; object-fit: cover;">
-                                                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">
-                                                            Count
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6 col-sm-8">
-                                                    <h6 class="fw-bold text-dark mb-2">@cartItem.Product.Name</h6>
-                                                    <div class="text-muted small">
-                                                        <div class="mb-1">
-                                                            <i class="fas fa-expand-arrows-alt me-2"></i>
-                                                            <span>Price: <span class="fw-semibold">@cartItem.Product.Price.ToString("C", CultureInfo.GetCultureInfo("en-us"))</span></span>
-                                                        </div>
-                                                        <div>
-                                                            <i class="fas fa-cubes me-2"></i>
-                                                            <span>Quantity: <span class="fw-semibold">@cartItem.Count</span></span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-3 text-md-end mt-3 mt-md-0">
-                                                    <div class="price-section">
-                                                        <div class="h5 fw-bold text-warning mb-0">
-                                                            <span class="border-bottom border-2 border-warning">@((cartItem.Product.Price * cartItem.Count).ToString("C", CultureInfo.GetCultureInfo("en-us"))) </span >
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        } *@
-                                        @foreach (var cartItem in ShoppingCarts)
-                                        {
-                                            <tr>
-                                                <!-- Product Image -->
-                                                <td class="text-center">
-                                                    <div class="product-image-wrapper">
-                                                        <img src="@(cartItem.Product.ImageUrl ?? "/images/your-logo.svg") " 
-                                                        alt="@cartItem.Product.Name" 
-                                                        class="img-fluid rounded-3 shadow-sm product-img">
-                                                    </div>
-                                                </td>
-
-                                                <!-- Product Name -->
-                                                <td>
-                                                    <h6 class="fw-bold text-dark mb-1">@cartItem.Product.Name</h6>
-                                                    <small class="text-muted">@cartItem.Product.Description</small>
-                                                </td>
-
-                                                <!-- Unit Price -->
-                                                <td class="text-center">
-                                                    <span class="fw-semibold text-success">
-                                                        @cartItem.Product.Price.ToString("C", CultureInfo.GetCultureInfo("en-us"))
-                                                    </span>
-                                                </td>
-
-                                                <!-- Quantity Controls -->
-                                                <td class="text-center">
-                                                    <div class="d-flex align-items-center justify-content-center gap-2">
-                                                        <button type="button" class="btn btn-outline-danger btn-sm qty-btn" @onclick="()=>UpdateCartItem(cartItem.ProductId, -1)">
-                                                            <i class="fas fa-minus"></i>
-                                                        </button>
-
-                                                        <span class="qty-display fw-bold mx-2">@cartItem.Count</span>
-
-                                                        <button type="button" 
-                                                        class="btn btn-outline-success btn-sm qty-btn"
-                                                        @onclick="()=>UpdateCartItem(cartItem.ProductId, 1)">
-                                                            <i class="fas fa-plus"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-
-                                                <!-- Total Price -->
-                                                <td class="text-center">
-                                                    <span class="fw-bold text-warning fs-6">
-                                                        @((cartItem.Product.Price * cartItem.Count).ToString("C", CultureInfo.GetCultureInfo("en-us")))
-                                                    </span>
-                                                </td>
-
-                                                <!-- Remove Button -->
-                                                <td class="text-center">
-                                                    <button type="button" 
-                                                    class="btn btn-outline-danger btn-sm remove-item-btn" 
-                                                    @onclick="()=>UpdateCartItem(cartItem.ProductId, -10000)"
-                                                    title="Remove item">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </div>
-
-                                    <!-- Order Total -->
-                                    <div class="p-4 bg-light">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h4 class="mb-0 text-dark">Order Total:</h4>
-                                            <h3 class="mb-0 text-success fw-bold">$OrderTotal</h3>
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                            </div>
+        <div class="container-fluid bg-light min-vh-100 py-4">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-12">
+                        <!-- Page Header -->
+                        <div class="text-center mb-4">
+                            <h1 class="display-6 fw-bold text-dark mb-2">Checkout</h1>
+                            <p class="text-muted">Review your order and complete your purchase</p>
                         </div>
 
-                        <!-- Customer Details Column -->
-                        <div class="col-lg-5">
-                            <div class="card shadow-sm border-0 h-100">
-                                <div class="card-header bg-white border-0 py-3">
-                                    <h4 class="mb-0 text-success fw-bold">
-                                        <i class="fas fa-user-edit me-2"></i>Customer Details
-                                    </h4>
-                                </div>
+                        <div class="row g-4">
+                            <!-- Order Summary Column -->
+                            <div class="col-lg-7">
+                                <div class="card shadow-sm border-0 h-100">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h4 class="mb-0 text-success fw-bold">
+                                                <i class="fas fa-shopping-bag me-2"></i>Order Summary
+                                            </h4>
+                                            <a href="#" class="btn btn-outline-secondary btn-sm">
+                                                <i class="fas fa-arrow-left me-1"></i>Back to Cart
+                                            </a>
+                                        </div>
+                                    </div>
 
-                                <div class="card-body">
-                                    <form method="post">
-                                        <div class="row g-3">
-                                            <!-- Personal Information -->
-                                            <div class="col-12">
-                                                <h6 class="text-muted mb-3 fw-semibold">
-                                                    <i class="fas fa-user me-2"></i>Personal Information
-                                                </h6>
-                                            </div>
 
-                                            <div class="col-12">
-                                                <label for="customerName" class="form-label text-dark fw-semibold">
-                                                    Full Name <span class="text-danger">*</span>
-                                                </label>
-                                                <input type="text" class="form-control form-control-lg" id="customerName" 
-                                                placeholder="Enter your full name" required>
-                                            </div>
+                                    <div class="card-body p-0">
+                                        <!-- Product Items -->
+                                        @foreach (var cartItem in ShoppingCarts)
+                                        {
+                                            <div class="border-bottom p-4">
+                                                <div class="row align-items-center">
+                                                    <!-- Product Image -->
+                                                    <div class="col-md-2 col-sm-3 col-4 mb-3 mb-md-0">
+                                                        <div class="product-image-wrapper">
+                                                            <img src="@(cartItem.Product.ImageUrl ?? "/images/your-logo.svg")"
+                                                                 alt="@cartItem.Product.Name"
+                                                                 class="img-fluid rounded-3 shadow-sm product-img"
+                                                                 style="width: 100%; max-width: 80px; height: 80px; object-fit: cover;">
+                                                        </div>
+                                                    </div>
 
-                                            <div class="col-md-6">
-                                                <label for="customerPhone" class="form-label text-dark fw-semibold">
-                                                    Phone Number <span class="text-danger">*</span>
-                                                </label>
-                                                <input type="tel" class="form-control form-control-lg" id="customerPhone" 
-                                                placeholder="306946629139" required>
-                                            </div>
+                                                    <!-- Product Info -->
+                                                    <div class="col-md-4 col-sm-5 col-8 mb-3 mb-md-0">
+                                                        <h6 class="fw-bold text-dark mb-1">@cartItem.Product.Name</h6>
+                                                        <small class="text-muted d-block">@cartItem.Product.Description</small>
+                                                        <div class="mt-2">
+                                                            <span class="fw-semibold text-success">
+                                                                Unit Price: @cartItem.Product.Price.ToString("C", CultureInfo.GetCultureInfo("en-us"))
+                                                            </span>
+                                                        </div>
+                                                    </div>
 
-                                            <div class="col-md-6">
-                                                <label for="customerEmail" class="form-label text-dark fw-semibold">
-                                                    Email Address <span class="text-danger">*</span>
-                                                </label>
-                                                <input type="email" class="form-control form-control-lg" id="customerEmail" 
-                                                placeholder="your@email.com" required>
-                                            </div>
+                                                    <!-- Quantity Controls -->
+                                                    <div class="col-md-3 col-sm-4 col-6 mb-3 mb-md-0">
+                                                        <label class="small text-muted mb-2 d-block">Quantity</label>
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <button type="button" class="btn btn-outline-danger btn-sm qty-btn"
+                                                                    @onclick="()=>UpdateCartItem(cartItem.ProductId, -1)">
+                                                                <i class="fas fa-minus"></i>
+                                                            </button>
+                                                            <span class="qty-display fw-bold mx-2 px-2 py-1 bg-light rounded">@cartItem.Count</span>
+                                                            <button type="button"
+                                                                    class="btn btn-outline-success btn-sm qty-btn"
+                                                                    @onclick="()=>UpdateCartItem(cartItem.ProductId, 1)">
+                                                                <i class="fas fa-plus"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
 
-                                            <!-- Delivery Address -->
-                                            <div class="col-12 mt-4">
-                                                <h6 class="text-muted mb-3 fw-semibold">
-                                                    <i class="fas fa-map-marker-alt me-2"></i>Delivery Address
-                                                </h6>
+                                                    <!-- Total Price & Remove -->
+                                                    <div class="col-md-3 col-sm-12 col-6">
+                                                        <div class="text-md-end">
+                                                            <div class="mb-2">
+                                                                <label class="small text-muted d-block">Total Price</label>
+                                                                <span class="fw-bold text-warning fs-5">
+                                                                    @((cartItem.Product.Price * cartItem.Count).ToString("C", CultureInfo.GetCultureInfo("en-us")))
+                                                                </span>
+                                                            </div>
+                                                            <button type="button"
+                                                                    class="btn btn-outline-danger btn-sm remove-item-btn"
+                                                                    @onclick="()=>UpdateCartItem(cartItem.ProductId, -10000)"
+                                                                    title="Remove item">
+                                                                <i class="fas fa-trash-alt me-1"></i>Remove
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
+                                        }
 
-                                            <div class="col-12">
-                                                <label for="street" class="form-label text-dark fw-semibold">
-                                                    Street <span class="text-danger">*</span>
-                                                </label>
-                                                <input type="text" class="form-control form-control-lg" id="street" 
-                                                placeholder="Panepistimiou" required>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label for="Number" class="form-label text-dark fw-semibold">
-                                                    Number <span class="text-danger">*</span>
-                                                </label>
-                                                <input type="text" class="form-control form-control-lg" id="Number"
-                                                placeholder="199" required>
-                                            </div>
-                                            <div class="col-md-8">
-                                                <label for="city" class="form-label text-dark fw-semibold">
-                                                    City <span class="text-danger">*</span>
-                                                </label>
-                                                <input type="text" class="form-control form-control-lg" id="city" 
-                                                placeholder="Athens" required>
-                                            </div>
-
-                                            <div class="col-md-4">
-                                                <label for="Country" class="form-label text-dark fw-semibold">
-                                                    Country <span class="text-danger">*</span>
-                                                </label>
-                                                <input type="text" class="form-control form-control-lg" id="Country" 
-                                                placeholder="GR" required>
-                                            </div>
-
-                                            <div class="col-md-6">
-                                                <label for="postalCode" class="form-label text-dark fw-semibold">
-                                                    Postal Code <span class="text-danger">*</span>
-                                                </label>
-                                                <input type="text" class="form-control form-control-lg" id="postalCode" 
-                                                placeholder="10678" required>
-                                            </div>
-
-                                            <!-- Submit Button -->
-                                            <div class="col-12 mt-4">
-                                                <button type="submit" class="btn btn-success btn-lg w-100 py-3 fw-bold">
-                                                    <i class="fas fa-credit-card me-2"></i>
-                                                    Complete Order
-                                                    <div class="small mt-1 opacity-75">Secure Checkout</div>
-                                                </button>
-                                            </div>
-
-                                            <div class="col-12 text-center mt-3">
-                                                <small class="text-muted">
-                                                    <i class="fas fa-lock me-1"></i>
-                                                    Your information is secure and encrypted
-                                                </small>
+                                        <!-- Order Total -->
+                                        <div class="p-4 bg-light">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <h4 class="mb-0 text-dark">Total Items: @TotalItems</h4>
+                                                <h3 class="mb-0 text-success fw-bold">
+                                                    Order Total: @OrderHeader.OrderTotal.ToString("C", CultureInfo.GetCultureInfo("en-us"))
+                                                </h3>
                                             </div>
                                         </div>
-                                    </form>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <!-- Customer Details Column -->
+                            <!-- Customer Details Column -->
+                            <div class="col-lg-5">
+                                <div class="card shadow-sm border-0 h-100">
+                                    <div class="card-header bg-white border-0 py-3">
+                                        <h4 class="mb-0 text-success fw-bold">
+                                            <i class="fas fa-user-edit me-2"></i>Customer Details
+                                        </h4>
+                                    </div>
+
+                                    <EditForm Model="OrderHeader" FormName="CartForm" OnValidSubmit="ProcessOrderCreation" OnInvalidSubmit="OnInvalidSubmit">
+                                        <DataAnnotationsValidator />
+                                        <ValidationSummary />
+
+                                        <div class="card-body">
+                                            <div class="row g-3">
+                                                <!-- Personal Information -->
+                                                <div class="col-12">
+                                                    <h6 class="text-muted mb-3 fw-semibold">
+                                                        <i class="fas fa-user me-2"></i>Personal Information
+                                                    </h6>
+                                                </div>
+
+                                                <div class="col-12">
+                                                    <label for="customerName" class="form-label text-dark fw-semibold">
+                                                        Full Name <span class="text-danger">*</span>
+                                                    </label>
+                                                    <InputText @bind-Value="OrderHeader.Name" class="form-control form-control-lg" id="customerName"
+                                                               placeholder="Enter your full name" />
+                                                    <ValidationMessage For="@(() => OrderHeader.Name)" />
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label for="customerPhone" class="form-label text-dark fw-semibold">
+                                                        Phone Number <span class="text-danger">*</span>
+                                                    </label>
+                                                    <InputText @bind-Value="OrderHeader.PhoneNumber" class="form-control form-control-lg" id="customerPhone"
+                                                               placeholder="306946629139" />
+                                                    <ValidationMessage For="@(() => OrderHeader.PhoneNumber)" />
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label for="customerEmail" class="form-label text-dark fw-semibold">
+                                                        Email Address <span class="text-danger">*</span>
+                                                    </label>
+                                                    <InputText @bind-Value="OrderHeader.Email" class="form-control form-control-lg" id="customerEmail"
+                                                               placeholder="your@email.com" />
+                                                    <ValidationMessage For="@(() => OrderHeader.Email)" />
+                                                </div>
+
+                                                <!-- Delivery Address -->
+                                                <div class="col-12 mt-4">
+                                                    <h6 class="text-muted mb-3 fw-semibold">
+                                                        <i class="fas fa-map-marker-alt me-2"></i>Delivery Address
+                                                    </h6>
+                                                </div>
+
+                                                <div class="col-12">
+                                                    <label for="street" class="form-label text-dark fw-semibold">
+                                                        Street <span class="text-danger">*</span>
+                                                    </label>
+                                                    <InputText @bind-Value="OrderHeader.Street" class="form-control form-control-lg" id="street" placeholder="Panepistimiou"/>
+                                                    <ValidationMessage For="@(() => OrderHeader.Street)" />
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <label for="Number" class="form-label text-dark fw-semibold">
+                                                        Number <span class="text-danger">*</span>
+                                                    </label>
+                                                    <InputText @bind-Value="OrderHeader.Number" class="form-control form-control-lg" id="Number"
+                                                               placeholder="199" />
+                                                    <ValidationMessage For="@(() => OrderHeader.Number)" />
+                                                </div>
+
+                                                <div class="col-md-8">
+                                                    <label for="city" class="form-label text-dark fw-semibold">
+                                                        City <span class="text-danger">*</span>
+                                                    </label>
+                                                    <InputText @bind-Value="OrderHeader.City" class="form-control form-control-lg" id="city"
+                                                               placeholder="Athens" />
+                                                    <ValidationMessage For="@(() => OrderHeader.City)" />
+                                                </div>
+
+                                                <div class="col-md-4">
+                                                    <label for="Country" class="form-label text-dark fw-semibold">
+                                                        Country <span class="text-danger">*</span>
+                                                    </label>
+                                                    <InputText @bind-Value="OrderHeader.Country" class="form-control form-control-lg" id="Country"
+                                                               placeholder="GR" />
+                                                    <ValidationMessage For="@(() => OrderHeader.Country)" />
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <label for="postalCode" class="form-label text-dark fw-semibold">
+                                                        Postal Code <span class="text-danger">*</span>
+                                                    </label>
+                                                    <InputText @bind-Value="OrderHeader.PostalCode" class="form-control form-control-lg" id="postalCode"
+                                                               placeholder="10678" />
+                                                    <ValidationMessage For="@(() => OrderHeader.PostalCode)" />
+                                                </div>
+
+                                                <!-- Submit Button -->
+                                                <div class="col-12 mt-4">
+                                                    <button type="submit" class="btn btn-success btn-lg w-100 py-3 fw-bold" disabled="@IsProcessing">
+                                                        @if (IsProcessing)
+                                                        {
+                                                            <i class="fas fa-spinner fa-spin me-2"></i>
+                                                            <span>Processing...</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="fas fa-credit-card me-2"></i>
+                                                            <span>Complete Order</span>
+                                                        }
+                                                        <div class="small mt-1 opacity-75">Secure Checkout</div>
+                                                    </button>
+                                                </div>
+
+                                                <div class="col-12 text-center mt-3">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-lock me-1"></i>
+                                                        Your information is secure and encrypted
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </EditForm>
                                 </div>
                             </div>
                         </div>
@@ -267,8 +266,19 @@ else
                 </div>
             </div>
         </div>
-    </div>
-
+    }
+    else
+    {
+        <div class="p-4">
+            <div class="alert alert-warning">
+                <h4 class="alert-heading">Your Cart is Empty!</h4>
+                <p class="mb-0">It seems you haven't added any items to your cart yet. Start shopping now!</p>
+                <a href="/" class="btn btn-success mt-3">
+                    <i class="fas fa-shopping-cart me-2"></i>Continue Shopping
+                </a>
+            </div>
+        </div>
+    }
     <!-- Optional: Add Font Awesome for icons if not already included -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -388,9 +398,20 @@ else
 @code {
     private IEnumerable<ShoppingCart> ShoppingCarts = new List<ShoppingCart>();
     private bool IsProcessing { get; set; } = true;
+
     [SupplyParameterFromForm]
     public OrderHeader OrderHeader { get; set; } = new OrderHeader();
     private int TotalItems { get; set; } = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        OrderHeader.Email = user.FindFirst(u => u.Type.Contains("Email"))?.Value ?? "";
+        OrderHeader.UserId = user.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value ?? "";
+        OrderHeader.Status = SD.StatusPending;
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -400,24 +421,64 @@ else
             StateHasChanged();
         }
     }
+
     private async Task LoadCart()
     {
-        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         ShoppingCarts = await _cartRepository.GetAllAsync(user.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value);
+
+        OrderHeader.OrderTotal = 0;
+        TotalItems = 0;
+        foreach (var cart in ShoppingCarts)
+        {
+            OrderHeader.OrderTotal += (Convert.ToDouble(cart.Product.Price) * cart.Count);
+            TotalItems += cart.Count;
+        }
+        OrderHeader.OrderTotal = Math.Round(OrderHeader.OrderTotal, 2);
     }
+
     private async Task UpdateCartItem(int productId, int updateBy)
     {
-        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        var authenticated = user.Identity is not null && user.Identity.IsAuthenticated;
 
-     
-            //add item to cart
-            var result = await
-        _cartRepository.UpdateCartAsync(user.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value, productId, updateBy);
+        var result = await _cartRepository.UpdateCartAsync(
+            user.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value,
+            productId,
+            updateBy);
         await LoadCart();
-          
     }
-    
+
+    private async Task ProcessOrderCreation()
+    {
+        try
+        {
+            IsProcessing = true;
+            StateHasChanged();
+
+            // Βεβαιώσου ότι έχουμε UserId
+            var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            OrderHeader.UserId = user.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value ?? "";
+
+            OrderHeader.OrderDetails = SD.ConvertShoppingCartListToOrderDetail(ShoppingCarts.ToList());
+            var createdOrder = await _orderRepository.CreateAsync(OrderHeader);
+
+            _navigationManager.NavigateTo($"/order/confirmation/{createdOrder.Id}", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            // Log the error or show user message
+            Console.WriteLine($"Error creating order: {ex.Message}");
+            IsProcessing = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnInvalidSubmit()
+    {
+        // This method is called when validation fails
+        Console.WriteLine("Form validation failed");
+    }
 }

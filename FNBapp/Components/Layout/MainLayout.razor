@@ -1,6 +1,6 @@
 ﻿@using FNBapp.Utility
 @inherits LayoutComponentBase
-@inject AuthenticationStateProvider _AuthenticationStateProvider
+@inject AuthenticationStateProvider _authenticationStateProvider
 
 <div class="page">
 
@@ -41,7 +41,7 @@
     }
     private async Task<bool> ShowNavBar()
     {
-        var authState = await _AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         var authenticated = user.Identity is not null && user.Identity.IsAuthenticated;
 
